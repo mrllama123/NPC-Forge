@@ -1,0 +1,46 @@
+# NPC-Forge server + an Ollama host for the probabilistic (LLM) fallback.
+#
+#   docker compose up --build
+#
+# Then:
+#   curl -s http://localhost:5000/api/v1/models
+#   curl -s -X POST http://localhost:5000/api/v1/chat/completions \
+#        -H 'content-type: application/json' \
+#        -d '{"model":"termy","messages":[{"role":"user","content":"<userRequest>hello</userRequest>"}]}'
+
+services:
+  npc-forge:
+    build:
+      context: .
+      # args:
+      #   NPCS: "termy,smith,example"
+    image: npc-forge:local
+    ports:
+      - "5000:5000"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "5000"
+      WORKERS: "4"
+      # needed to connect to ollama server that is not running in container (like in mac os)
+      OLLAMA_URL: "http://host.docker.internal:11434"
+    # depends_on:
+    #   ollama:
+    #     condition: service_started
+
+  # Optional: provides the probabilistic engine termy falls back to.
+  # Pull a small model first, e.g. `docker compose exec ollama ollama pull gemma2:2b`
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama-data:/root/.ollama
+  #   # healthcheck so npc-forge can start once ollama is listening
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:11434/api/tags || exit 1"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 10
+
+volumes:
+  ollama-data:

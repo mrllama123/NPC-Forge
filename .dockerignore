@@ -1,0 +1,30 @@
+# version control / caches
+.git
+.gitignore
+.venv
+venv
+*.egg-info
+__pycache__
+*.py[cod]
+.pytest_cache
+
+# logs / runtime state (generated at boot inside the container)
+logs
+*.log
+context_memory.json
+
+# editor / OS junk
+.vscode
+.idea
+*.swp
+.DS_Store
+Thumbs.db
+
+# docs & non-runtime media (image is server-only)
+docs
+**/*.gif
+**/*.png
+
+# keep only what the server needs from npcs/
+npcs/**/vscode.gif
+npcs/**/showcase*.gif
