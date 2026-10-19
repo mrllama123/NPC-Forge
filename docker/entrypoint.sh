@@ -8,6 +8,9 @@
 #   WORKERS     gunicorn workers      (default 4)
 #   OLLAMA_URL  override termy's LLM  (default empty -> use baked-in config.json)
 #               e.g. http://ollama:11434  for a compose-side Ollama service
+#   RELOAD      1/true/yes/on -> run gunicorn with --reload so it hot-reloads
+#               .py on change
+#               without a container restart. Default 0 (off) for production.
 #
 set -euo pipefail
 
@@ -35,10 +38,23 @@ if [ -n "${NPC_INSTALL:-}" ]; then
   python cli.py install "$NPC_INSTALL"
 fi
 
+# ---- optional: dev hot-reload ------------------------------------------
+reload_args=()
+case "${RELOAD:-0}" in
+  1|true|TRUE|True|yes|YES|on|ON)
+    reload_args=(--reload)
+    ;;
+esac
+
 # ---- run the server ------------------------------------------------------
-echo "[entrypoint] gunicorn server:app on ${HOST}:${PORT} (${WORKERS} workers)"
+if [ ${#reload_args[@]} -gt 0 ]; then
+  echo "[entrypoint] gunicorn server:app on ${HOST}:${PORT} (${WORKERS} workers) [RELOAD on]"
+else
+  echo "[entrypoint] gunicorn server:app on ${HOST}:${PORT} (${WORKERS} workers)"
+fi
 exec gunicorn server:app \
   --bind "${HOST}:${PORT}" \
   --workers "${WORKERS:-4}" \
+  "${reload_args[@]}" \
   --access-logfile - \
   --error-logfile -

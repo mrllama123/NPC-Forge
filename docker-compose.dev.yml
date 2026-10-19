@@ -1,0 +1,45 @@
+# docker-compose.dev.yml — hot-reload override for development.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Reload strategy: gunicorn --reload (RELOAD=1). The master polls for changed
+# files and reloads workers in place -- no container restart per edit.
+#   - ./src  -> synced into the container, then gunicorn's .py watcher reloads
+#   - ./npcs -> bind-mounted live, gunicorn's JSON/sh watcher reloads
+#   - recipe/deps -> a one-time `rebuild` (can't hot-reload those)
+#
+# Why `sync` and not a bind mount for ./src:
+#   The image flattens src/ into $FORGE_DIR (COPY src/ ./). A bind mount of
+#   ./src over $FORGE_DIR would HIDE the baked entrypoint.sh / npcs / logs.
+#   `sync` instead copies host files INTO $FORGE_DIR, so baked files survive.
+#
+# npcs/ is a clean subdir, so it could be bind-mounted too — but `sync` keeps
+# the entrypoint's OLLAMA_URL config rewrite inside the container instead of
+# mutating your host file.
+
+services:
+  npc-forge:
+    # RELOAD=1 -> gunicorn --reload (entrypoint.sh): hot-reload .py + JSON/sh
+    # NPC files at the worker level, no container restart per edit.
+    environment:
+      RELOAD: "1"
+    volumes:
+      # npcs/ live so gunicorn's JSON/sh watcher sees host edits. (src/ is
+      # synced below instead of bind-mounted -- see header.)
+      - ./npcs:/home/forge/.local/share/npc-forge/npcs
+    develop:
+      watch:
+        # 1) copy host source into the container's registry dir; gunicorn's
+        #    .py watcher picks up the reload.
+        - action: sync
+          path: ./src
+          target: /home/forge/.local/share/npc-forge
+
+        # 2) rebuild the image only when deps / build recipe change (these can't
+        #    be hot-reloaded).
+        - action: rebuild
+          path: ./pyproject.toml
+        - action: rebuild
+          path: ./Dockerfile
+        - action: rebuild
+          path: ./docker/entrypoint.sh
