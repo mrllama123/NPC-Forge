@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 from datetime import datetime
 
+from constants import FORGE_DIR
 from storage.dataset import DatasetStorage
 
 RED = "\033[31m"
@@ -16,8 +17,7 @@ YELLOW = "\033[33m"
 RESET = "\033[0m"
 
 # Standard XDG Directory for local user
-FORGE_DATA_DIR = Path.home() / ".local" / "share" / "npc-forge"
-LOG_FILE_PATH = FORGE_DATA_DIR / "npc_forge.log"
+LOG_FILE_PATH = FORGE_DIR / "npc_forge.log"
 SERVICE_NAME = "npc-forge.service"
 
 storage = DatasetStorage()
@@ -65,18 +65,18 @@ def stream_logs():
 
 def run_framework_tests():
     """Executes the compact color-coded test runner within the proper production User Space environment context."""
-    venv_python = FORGE_DATA_DIR / "venv" / "bin" / "python3"
-    test_dir = FORGE_DATA_DIR / "tests"
+    venv_python = FORGE_DIR / "venv" / "bin" / "python3"
+    test_dir = FORGE_DIR / "tests"
     runner_script = test_dir / "run_tests.py"
         
     print(f"\n{YELLOW}[NPC-FORGE]{RESET} Initializing testing pipeline engine from: {GREEN}{test_dir}{RESET}...\n")
     
     current_env = os.environ.copy()
-    current_env["PYTHONPATH"] = f"{FORGE_DATA_DIR}:{str(FORGE_DATA_DIR / 'src')}:{current_env.get('PYTHONPATH', '')}"
+    current_env["PYTHONPATH"] = f"{FORGE_DIR}:{str(FORGE_DIR / 'src')}:{current_env.get('PYTHONPATH', '')}"
     
     if runner_script.exists():
         cmd = [str(venv_python), str(runner_script)]
-        sub_cwd = str(FORGE_DATA_DIR)
+        sub_cwd = str(FORGE_DIR)
     else: 
         cmd = [
             str(venv_python), "-m", "unittest", "discover", 
@@ -99,8 +99,8 @@ def create_npc(name: str):
         print(f"{RED}[NPC-FORGE]{RESET} Error: NPC name cannot be empty.")
         sys.exit(1)
 
-    src_base = FORGE_DATA_DIR / "npcs" / "example"
-    dst_base = FORGE_DATA_DIR / "npcs" / name
+    src_base = FORGE_DIR / "npcs" / "example"
+    dst_base = FORGE_DIR / "npcs" / name
 
     if not src_base.exists():
         print(f"{RED}[NPC-FORGE]{RESET} Error: Example template missing at '{src_base}'.")
@@ -153,7 +153,7 @@ def install_npc(source_path: str, dev: bool = False):
     if npc_name == "." or npc_name == "":
         npc_name = src.parent.name.lower().strip()
 
-    target_npc_dir = FORGE_DATA_DIR / "npcs" / npc_name
+    target_npc_dir = FORGE_DIR / "npcs" / npc_name
     print(f"\n{YELLOW}[NPC-FORGE]{RESET} Installing NPC {GREEN}{npc_name}{RESET}...")
     
     # Check if source and destination are the same (symlinked in dev mode)
@@ -225,7 +225,7 @@ def format_date(timestamp: float) -> str:
 
 def list_installed_npcs():
     """Reads the registry folder and aggregates metrics about installed NPCs in a clean table format."""
-    npc_base_dir = FORGE_DATA_DIR / "npcs"
+    npc_base_dir = FORGE_DIR / "npcs"
     if not npc_base_dir.exists() or not npc_base_dir.is_dir():
         print("No NPCs installed yet.")
         return

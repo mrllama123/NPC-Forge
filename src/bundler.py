@@ -2,9 +2,9 @@
 import json
 
 from pathlib import Path
+from constants import FORGE_DIR
 from storage.dataset import DatasetStorage
 
-REGISTRY_DIR = Path.home() / ".local" / "share" / "npc-forge"
 SRC_DIR = Path(__file__).parent.resolve()
 
 storage = DatasetStorage()
@@ -45,7 +45,7 @@ def load_and_merge_json_files(base_path, pattern, fallback_filename):
     return merged_data
 
 def npc_to_html(npc_name):
-    base_npc_path = REGISTRY_DIR / "npcs" / npc_name
+    base_npc_path = FORGE_DIR / "npcs" / npc_name
     dataset_dir = base_npc_path / "dataset"
     vocab_dir = dataset_dir / "vocabulary"
     
@@ -93,7 +93,7 @@ def npc_to_html(npc_name):
     return html_compiled
 
 def compile_standalone_npc(npc_name):
-    base_npc_path = REGISTRY_DIR / "npcs" / npc_name
+    base_npc_path = FORGE_DIR / "npcs" / npc_name
     
     if not base_npc_path.exists():
         print(f"Error: NPC '{npc_name}' not found on disk.")
