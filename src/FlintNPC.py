@@ -1,5 +1,3 @@
-import glob
-import json
 import os
 import re
 import random
@@ -84,8 +82,8 @@ class FlintNPC:
 
     def load_data(self, dataset_dir):
         self.personality = self.storage.load_json(dataset_dir, "personality.json") or []
-        self.dataset = self.storage.load_json_recursive(dataset_dir, "dataset_*.json")
-        self.templates = self.storage.load_json_recursive(dataset_dir, "templates_*.json")
+        self.dataset = self.storage.load_json_recursive(dataset_dir, "dataset_*")
+        self.templates = self.storage.load_json_recursive(dataset_dir, "templates_*")
     
         v_lists = [
             "expletives", 
@@ -166,6 +164,13 @@ class FlintNPC:
         logger.info(f"[FlintNPC.py][{self.name}][process_message] Prompt: {user_prompt}")                    
         rarest_word = self.nlp.get_rarest_word(user_prompt)
         
+        if not rarest_word:
+            # No words from the query exist in the vocabulary
+            # Skip scan and return rejected immediately
+            return self.generate_response(
+                self.rejection, {}, 0.0, "rejected", []
+            )
+
         if not user_prompt:
             return self.generate_response(self.rejection, {}, 0.0, "rejected")
         
@@ -174,9 +179,14 @@ class FlintNPC:
         )
 
         merged_map = self._get_merged_match_map()
-        if stripped in merged_map:
-            matched_block = merged_map[stripped]
-            match_status = "context match" if stripped in self.active_context_map else "exact match"
+        lookup = stripped.lower().strip()
+        if lookup in merged_map:
+            matched_block = merged_map[lookup]
+            match_status = (
+                "context match" if (
+                    lookup in self.active_context_map
+                ) else "exact match"
+            )
             
             self.update_context(matched_block)
             self.nlp.strip_and_sentiment(
@@ -458,6 +468,6 @@ class FlintNPC:
 
         if "tools" in block and isinstance(block["tools"], list):
             payload["tools"] = render_all_tags(copy.deepcopy(block["tools"]))
-
+            
         logger.info(f"[FlintNPC.py][{self.name}][generate_response] Payload: {payload}")
         return payload

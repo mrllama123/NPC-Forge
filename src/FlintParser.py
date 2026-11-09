@@ -1,6 +1,5 @@
 import re
 import string
-import math
 from logger import logger
 
 class FlintParser:
@@ -99,12 +98,10 @@ class FlintParser:
 
     def calculate_auto_weights(self, intents):
         """
-            Computes IDF (Inverse Document Frequency) for every 
-            unique word across the intent dataset's "input" key. 
-            Contribution of words that show up in many intents 
-            ("is", "at", "it") is scaled down toward 0.0
-            while words that are exclusive to an intent are
-            scaled up toward 1.0. Runs once at initialization.
+        Computes Document Frequency weights for every unique word across 
+        the intent dataset's "input" key. Rarest words approach 1.0, 
+        most common scaffolding approaches ~0.05. Stable regardless of 
+        dataset size (unlike log(N/k) which degenerates as N grows).
         """
         total_intents = len(intents)
         if not total_intents:
@@ -120,14 +117,16 @@ class FlintParser:
             for word in unique_words_in_intent:
                 word_intent_counts[word] = word_intent_counts.get(word, 0) + 1
 
-        weights = {
-            word: math.log(total_intents / count) + 0.1
-            for word, count in word_intent_counts.items()
-        }
-
-        # Normalize so that the maximum possible weight is 1.0
-        max_idf = max(weights.values()) if weights else 1.0
-        return {word: idf / max_idf for word, idf in weights.items()}
+        # Document Frequency: ratio of intents containing the word
+        max_count = max(word_intent_counts.values()) if word_intent_counts else 1
+        
+        weights = {}
+        for word, count in word_intent_counts.items():
+            # Rarest words (count=1) -> 1.0, most common words -> ~0.05
+            # Epsilon (0.05) prevents stop words from having exactly 0 weight
+            weights[word] = max(0.05, 1.0 - (count / max_count))
+            
+        return weights
     
     def get_rarest_word(self, prompt: str) -> str | None:
         """Extract the word with highest IDF weight (rarest/most specific) from prompt."""
@@ -366,7 +365,7 @@ class FlintParser:
             "max_score": max_score,
             "synonym_weight": synonym_weight,
             "token_count": len(tokens),
-            "max_weight_sums": max_weight_sums  # <-- NEW
+            "max_weight_sums": max_weight_sums
         }
 
     def fast_score_calculation(self, query_tokens: list, data: dict, threshold: float) -> float:
