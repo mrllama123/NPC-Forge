@@ -16,7 +16,7 @@ YELLOW='\033[0;33m'
 GREEN='\033[0;32m'
 RESET='\033[0m'
 
-FORGE_DIR="$HOME/.local/share/npc-forge"
+FORGE_DIR=${FORGE_DIR:-"$HOME/.local/share/npc-forge"}
 BIN_DIR="$HOME/.local/bin"
 TERMY_DIR="$FORGE_DIR/npcs/termy"
 INSTALL_MAIN_BIN="$BIN_DIR/termy"

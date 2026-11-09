@@ -15,7 +15,7 @@ RUN useradd -m -u 1000 -s /bin/bash forge
 
 # Registry dir the three path-anchored modules (registry/bundler/logger) expect:
 #   $HOME/.local/share/npc-forge
-ENV FORGE_DIR=$HOME/.local/share/npc-forge
+ENV FORGE_DIR=$HOME/npc-forge
 ENV PYTHONPATH=$FORGE_DIR
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -48,6 +48,7 @@ RUN for npc in $(echo "$NPCS" | tr ',' ' '); do \
       if [ ! -d "npcs/$npc" ]; then echo "WARN: npc '$npc' not found, skipping"; fi; \
     done \
     && for npc in $(ls npcs); do \
+         if [[ "$npc" == "termy" ]]; then ./npcs/termy/setup.sh; fi;  \
          echo "$NPCS" | tr ',' '\n' | grep -qx "$npc" || rm -rf "npcs/$npc"; \
        done
 
@@ -62,5 +63,5 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:5000/api/v1/models').status==200 else 1)"
 
-ENTRYPOINT ["/home/forge/.local/share/npc-forge/entrypoint.sh"]
+ENTRYPOINT ["/home/forge/npc-forge/entrypoint.sh"]
 CMD ["gunicorn"]
